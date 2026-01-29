@@ -1,0 +1,80 @@
+local
+
+############################
+# Python / FastAPI
+############################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env/
+.env.*
+.envrc
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+alembic/versions/*.pyc
+
+############################
+# Node / Angular
+############################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Angular build
+dist/
+.angular/
+.cache/
+
+############################
+# Docker
+############################
+*.log
+docker-data/
+docker-volume/
+postgres-data/
+
+############################
+# Database
+############################
+*.sqlite3
+*.db
+
+############################
+# OS / IDE
+############################
+.DS_Store
+Thumbs.db
+
+# IntelliJ / PyCharm / VS Code
+.idea/
+.vscode/
+*.iml
+
+############################
+# Temporary / backups
+############################
+*.tmp
+*.bak
+*.swp
+*.swo
+
+############################
+# Docs build artifacts
+############################
+site/
