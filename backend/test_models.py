@@ -27,16 +27,13 @@ class TestModels:
         """
         Test verifying the correct creation of the Currency model.
         """
-        # Given: A new currency object
         currency_data = {"code": "USD", "name": "United States Dollar"}
-        
-        # When: We save the currency to the database
+
         currency = Currency(**currency_data)
         db_session.add(currency)
         db_session.commit()
         db_session.refresh(currency)
 
-        # Then: The object should be correctly saved with an assigned ID
         assert currency.id is not None
         assert currency.code == "USD"
         assert currency.name == "United States Dollar"
@@ -45,18 +42,15 @@ class TestModels:
         """
         Test verifying the correct creation of a Rate assigned to a Currency.
         """
-        # Given: An existing currency in the database
         currency = Currency(code="EUR", name="Euro")
         db_session.add(currency)
         db_session.commit()
 
-        # When: We create a rate for this currency
         rate = Rate(currency_id=currency.id, date=date(2026, 1, 30), rate=4.25)
         db_session.add(rate)
         db_session.commit()
         db_session.refresh(rate)
 
-        # Then: The rate should be correctly saved and linked to the currency ID
         assert rate.id is not None
         assert rate.currency_id == currency.id
         assert rate.rate == 4.25
@@ -66,7 +60,6 @@ class TestModels:
         """
         Test verifying the one-to-many relationship between Currency and Rates.
         """
-        # Given: A currency with two assigned rates
         currency = Currency(code="GBP", name="British Pound")
         db_session.add(currency)
         db_session.commit()
@@ -76,10 +69,8 @@ class TestModels:
         db_session.add_all([rate1, rate2])
         db_session.commit()
 
-        # When: We retrieve the currency from the database
         db_session.refresh(currency)
 
-        # Then: We should have access to the list of rates via the relationship
         assert len(currency.rates) == 2
         assert currency.rates[0].rate == 5.01
         assert currency.rates[1].rate == 5.05
