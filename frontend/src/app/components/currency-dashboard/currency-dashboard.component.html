@@ -1,0 +1,85 @@
+<div class="dashboard-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title
+        >Aplikacja Kursów Walut - Eliza Domnik, nr albumu 100069.
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="controls">
+        <mat-form-field appearance="fill">
+          <mat-label>Wybierz datę</mat-label>
+          <input
+            matInput
+            [matDatepicker]="picker"
+            [(ngModel)]="selectedDate"
+            (dateChange)="onDateChange($event)"
+          />
+          <mat-datepicker-toggle
+            matIconSuffix
+            [for]="picker"
+          ></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="fetchFromNbp()"
+          [disabled]="loading"
+        >
+          Synchronizuj z NBP
+        </button>
+      </div>
+
+      <div *ngIf="loading" class="spinner-container">
+        <mat-spinner diameter="50"></mat-spinner>
+      </div>
+
+      <div *ngIf="message" class="status-message">{{ message }}</div>
+
+      <div class="date-info" *ngIf="rates.length > 0">
+        <strong>Szczegóły daty:</strong>
+        Rok: {{ getYear(selectedDate) }}, Kwartał:
+        {{ getQuarter(selectedDate) }}, Miesiąc: {{ getMonth(selectedDate) }},
+        Dzień: {{ getDay(selectedDate) }}
+      </div>
+
+      <table
+        mat-table
+        [dataSource]="rates"
+        *ngIf="rates.length > 0"
+        class="mat-elevation-z8"
+      >
+        <ng-container matColumnDef="code">
+          <th mat-header-cell *matHeaderCellDef>Kod waluty</th>
+          <td mat-cell *matCellDef="let rate">{{ rate.currency.code }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Nazwa waluty</th>
+          <td mat-cell *matCellDef="let rate">{{ rate.currency.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="rate">
+          <th mat-header-cell *matHeaderCellDef>Kurs</th>
+          <td mat-cell *matCellDef="let rate">
+            {{ rate.rate | number: "1.4-4" }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef>Data</th>
+          <td mat-cell *matCellDef="let rate">{{ rate.date }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+
+      <div *ngIf="!loading && rates.length === 0 && !message">
+        Brak danych do wyświetlenia.
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
