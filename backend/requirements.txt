@@ -4,3 +4,4 @@ sqlalchemy>=2.0.30
 psycopg[binary]
 alembic==1.13.1
 requests==2.31.0
+behave==1.2.6

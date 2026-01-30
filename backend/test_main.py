@@ -26,80 +26,79 @@ def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
 client = TestClient(app)
 
-def test_read_root():
-    """Test endpointu głównego."""
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Currency Converter API is running"}
+class TestCurrencyAPI:
+    @pytest.fixture(autouse=True)
+    def setup_db(self):
+        Base.metadata.create_all(bind=engine)
+        yield
+        Base.metadata.drop_all(bind=engine)
 
-def test_get_currencies_empty():
-    """Test pobierania listy walut, gdy baza jest pusta."""
-    response = client.get("/currencies")
-    assert response.status_code == 200
-    assert response.json() == []
+    def test_should_return_welcome_message_on_root(self):
+        response = client.get("/")
 
-def test_get_currencies_with_data():
-    """Test pobierania listy walut z danymi."""
-    db = TestingSessionLocal()
-    db.add(models.Currency(code="USD", name="dolar amerykański"))
-    db.commit()
+        assert response.status_code == 200
+        assert response.json() == {"message": "Currency Converter API is running"}
 
-    response = client.get("/currencies")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["code"] == "USD"
-    db.close()
+    def test_should_return_empty_list_when_no_currencies(self):
+        response = client.get("/currencies")
 
-def test_get_currencies_by_date():
-    """Test pobierania kursów walut dla konkretnej daty."""
-    db = TestingSessionLocal()
-    curr = models.Currency(code="EUR", name="euro")
-    db.add(curr)
-    db.flush()
+        assert response.status_code == 200
+        assert response.json() == []
 
-    today = date(2026, 1, 30)
-    db.add(models.Rate(currency_id=curr.id, date=today, rate=4.25))
-    db.add(models.Rate(currency_id=curr.id, date=date(2026, 1, 29), rate=4.20))
-    db.commit()
+    def test_should_return_list_of_currencies(self):
+        db = TestingSessionLocal()
+        db.add(models.Currency(code="USD", name="United States Dollar"))
+        db.commit()
 
-    # Test filtrowania po dacie
-    response = client.get("/currencies/2026-01-30")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["rate"] == 4.25
-    assert data[0]["currency"]["code"] == "EUR"
-    db.close()
+        response = client.get("/currencies")
 
-def test_fetch_rates_mock(mocker):
-    """Test endpointu fetch z mockowanym serwisem NBP."""
-    # Mockowanie nbp_service
-    mock_fetch = mocker.patch("nbp_service.fetch_exchange_rates")
-    mock_fetch.return_value = [{
-        "table": "A",
-        "no": "001/A/NBP/2026",
-        "effectiveDate": "2026-01-30",
-        "rates": [{"currency": "testowa", "code": "TST", "mid": 1.23}]
-    }]
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["code"] == "USD"
+        db.close()
 
-    response = client.post("/currencies/fetch")
-    assert response.status_code == 200
-    assert "Pomyślnie zsynchronizowano dane" in response.json()["message"]
+    def test_should_return_rates_for_specific_date(self):
+        db = TestingSessionLocal()
+        curr = models.Currency(code="EUR", name="Euro")
+        db.add(curr)
+        db.flush()
 
-    # Weryfikacja zapisu w bazie
-    db = TestingSessionLocal()
-    currency = db.query(models.Currency).filter_by(code="TST").first()
-    assert currency is not None
-    rate = db.query(models.Rate).filter_by(currency_id=currency.id).first()
-    assert rate is not None
-    assert rate.rate == 1.23
-    db.close()
+        today = date(2026, 1, 30)
+        db.add(models.Rate(currency_id=curr.id, date=today, rate=4.25))
+        db.add(models.Rate(currency_id=curr.id, date=date(2026, 1, 29), rate=4.20))
+        db.commit()
+
+        response = client.get("/currencies/2026-01-30")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["rate"] == 4.25
+        assert data[0]["currency"]["code"] == "EUR"
+        db.close()
+
+    def test_should_fetch_and_store_rates_from_external_api(self, mocker):
+        mock_fetch = mocker.patch("nbp_service.fetch_exchange_rates")
+        mock_fetch.return_value = [{
+            "table": "A",
+            "no": "001/A/NBP/2026",
+            "effectiveDate": "2026-01-30",
+            "rates": [{"currency": "test currency", "code": "TST", "mid": 1.23}]
+        }]
+
+        response = client.post("/currencies/fetch")
+
+
+        assert response.status_code == 200
+        assert "successfully synchronized" in response.json()["message"] or "Pomyślnie zsynchronizowano" in response.json()["message"]
+
+        db = TestingSessionLocal()
+        currency = db.query(models.Currency).filter_by(code="TST").first()
+        assert currency is not None
+        rate = db.query(models.Rate).filter_by(currency_id=currency.id).first()
+        assert rate is not None
+        assert rate.rate == 1.23
+        db.close()

@@ -1,14 +1,13 @@
 from datetime import date
 from typing import List, Optional
 
+import models
+import schemas
+from database import get_db
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
-import models
-import schemas
-from database import get_db
 
 app = FastAPI(title="Currency Converter API")
 
@@ -52,12 +51,10 @@ def fetch_currencies(date: Optional[date] = None, db: Session = Depends(get_db))
     """
     from nbp_service import fetch_exchange_rates, normalize_data, save_rates
 
-    # Pobieranie danych z NBP
     raw_data = fetch_exchange_rates(date)
     if not raw_data:
         raise HTTPException(status_code=404, detail="Nie udało się pobrać danych z API NBP (brak danych dla wybranej daty lub błąd połączenia)")
 
-    # Normalizacja i zapis
     normalized_data = normalize_data(raw_data)
     added_count = save_rates(db, normalized_data)
 
